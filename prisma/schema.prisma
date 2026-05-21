@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Defining the core structures
+enum Role {
+  SUPER_ADMIN
+  SUB_ADMIN
+  USER
+}
+
+enum Department {
+  ENGINEERING
+  SALES
+  HR
+  MARKETING
+  EXECUTIVE
+}
+
+enum Permission {
+  VIEW_ALL_USERS
+  EDIT_PAYROLL
+  MANAGE_SYSTEM
+}
+
+// 2. The User Model
+model User {
+  id            String       @id @default(uuid())
+  firebaseUid   String       @unique // The bridge to your Firebase Auth
+  email         String       @unique
+  name          String
+  
+  // Access & Scope
+  role          Role         @default(USER)
+  department    Department
+  permissions   Permission[] 
+
+  // 3. The Self-Referencing Hierarchy
+  managerId     String?
+  manager       User?        @relation("UserToManager", fields: [managerId], references: [id])
+  directReports User[]       @relation("UserToManager")
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
