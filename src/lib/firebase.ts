@@ -3,13 +3,13 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAYT3RAn9LYOnThXFoMH5SDLjLkVKUanaY",
-  authDomain: "nwspl-f448a.firebaseapp.com",
-  projectId: "nwspl-f448a",
-  storageBucket: "nwspl-f448a.firebasestorage.app",
-  messagingSenderId: "335261314995",
-  appId: "1:335261314995:web:7489a52113e21b6d22a5c6",
-  measurementId: "G-TH1T0N3MS3"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase only if it hasn't been initialized yet to prevent Next.js errors
