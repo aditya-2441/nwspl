@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -16,33 +16,55 @@ enum Role {
 
 enum Department {
   ENGINEERING
+  BACKEND
+  UI_UX
   SALES
   HR
   MARKETING
   EXECUTIVE
 }
 
+// 2. The Tool / Feature Matrix
 enum Permission {
+  // Universal Manager Tools
   VIEW_ALL_USERS
-  EDIT_PAYROLL
   MANAGE_SYSTEM
+  TEAM_PERFORMANCE
+  MANAGE_USERS
+
+  // HR Specific Tools
+  EDIT_PAYROLL
+  VIEW_LEAVE_REQUESTS
+
+  // UI/UX Specific Tools
+  WIREFRAMES
+  DESIGN_SYSTEM
+
+  // Backend Specific Tools
+  SERVER_LOGS
+  API_KEYS
 }
 
-// 2. The User Model
+// 3. The User Model (Updated for MongoDB)
 model User {
-  id            String       @id @default(uuid())
-  firebaseUid   String       @unique // The bridge to your Firebase Auth
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  firebaseUid   String       @unique 
   email         String       @unique
   name          String
   
-  // Access & Scope
+  // Scope & Hierarchy
   role          Role         @default(USER)
   department    Department
+  
+  // GRANULAR ACCESS: The array of specific tools this user is allowed to see
   permissions   Permission[] 
+  
+  // MASTER KILL SWITCH: Easily revoke all access without deleting the account
+  isActive      Boolean      @default(true)
 
-  // 3. The Self-Referencing Hierarchy
-  managerId     String?
-  manager       User?        @relation("UserToManager", fields: [managerId], references: [id])
+  // 4. The Self-Referencing Hierarchy
+  managerId     String?      @db.ObjectId
+  manager       User?        @relation("UserToManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   directReports User[]       @relation("UserToManager")
 
   createdAt     DateTime     @default(now())

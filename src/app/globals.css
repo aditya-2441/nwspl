@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+@layer base {
+  input, select, textarea {
+    @apply bg-white text-gray-900 placeholder-gray-400 border-gray-300;
+    color: #111827 !important; /* Hard fallback */
+  }
+}
