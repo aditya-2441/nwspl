@@ -1,26 +1,27 @@
 // src/app/(auth)/login/page.tsx
-"use client"; // Required because we are using React state and Firebase auth
+"use client";
 
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth"; // NEW: Added signOut
 import { auth } from "@/lib/firebase";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false); // NEW: Added loading state
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     try {
+      // 1. Authenticate with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       
-      // NEW: Send the Firebase data to our Next.js backend
+      // 2. Send the Firebase data to our Next.js backend
       const response = await fetch("/api/sync-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -31,36 +32,35 @@ export default function LoginPage() {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to sync with database");
+      // Parse the JSON response so we can read the backend error message
+      const data = await response.json();
 
-      const dbData = await response.json();
-      console.log("MongoDB User Synced:", dbData.user);
-      
-     const role = dbData.user.role;
-      const dept = dbData.user.department;
-
-      // The Traffic Cop Logic
-      if (role === "SUPER_ADMIN") {
-        router.push("/super-admin");
-      } else if (dept === "HR") {
-        router.push("/hr");
-      } else if (role === "SUB_ADMIN") {
-        router.push("/department");
-      } else {
-        router.push("/employee");
+      // 3. THE FIX: Catch the specific "Bouncer" rejection
+      if (!response.ok) {
+        if (response.status === 403) {
+          // Immediately sign them out of Firebase so they don't have a zombie token
+          await signOut(auth); 
+          
+          // Display the exact revoked access message
+          setError("Your access has been revoked. Please contact administration.");
+          setIsLoading(false);
+          return;
+        }
+        
+        // Handle any other server crashes
+        throw new Error(data.error || "Failed to sync with database");
       }
+      
+      // 4. Success! Redirect to the root page and let the Smart Traffic Cop route them
+      window.location.href = "/";
       
     } catch (err: any) {
-      console.error("Full Error:", err); // Logs the real issue to your browser console
-      
-      // If it's a custom error from our API, show it. Otherwise, show the default.
-      if (err.message === "Failed to sync with database") {
-         setError("Firebase login worked, but database sync failed! Check VS Code terminal.");
-      } else {
-         setError(err.message || "Invalid email or password. Please try again.");
-      }
+      console.error("Full Error:", err); 
+      setError(err.message || "Invalid email or password. Please try again.");
+      setIsLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
@@ -83,6 +83,7 @@ export default function LoginPage() {
                 className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -93,17 +94,25 @@ export default function LoginPage() {
                 className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
               />
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {error && (
+            <div className="p-3 rounded-md bg-red-50 border border-red-200">
+              <p className="text-red-600 text-sm text-center font-medium">{error}</p>
+            </div>
+          )}
 
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            disabled={isLoading}
+            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              isLoading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-            Sign In
+            {isLoading ? "Signing In..." : "Sign In"}
           </button>
         </form>
       </div>

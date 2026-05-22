@@ -2,6 +2,7 @@
 import { cookies } from "next/headers";
 import SignOutButton from "@/components/SignOutButton";
 import Sidebar from "@/components/Sidebar";
+import Heartbeat from "@/components/Heartbeat";
 import prisma from "@/lib/prisma"; 
 import { Permission } from "@prisma/client"; 
 
@@ -130,13 +131,11 @@ export default async function DashboardsLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Heartbeat />
       {/* GLOBAL TOP NAVIGATION */}
       <nav className="bg-slate-900 text-white p-4 shadow-md z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-             <div className="h-8 w-8 bg-blue-600 rounded flex items-center justify-center font-bold">
-               NW
-             </div>
              <h1 className="text-xl font-bold tracking-tight">NWSPL Portal</h1>
           </div>
           
